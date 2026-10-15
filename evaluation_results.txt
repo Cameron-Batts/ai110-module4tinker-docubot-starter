@@ -1,0 +1,47 @@
+Running retrieval evaluation...
+
+
+Evaluation Results
+------------------
+Hit rate: 0.62
+
+Query: Where is the auth token generated?
+  Expected:  ['AUTH.md']
+  Retrieved: ['AUTH.md', 'AUTH.md', 'AUTH.md']
+  Hit:       True
+
+Query: What environment variables are required for authentication?
+  Expected:  ['AUTH.md']
+  Retrieved: ['AUTH.md', 'SETUP.md', 'SETUP.md']
+  Hit:       True
+
+Query: How do I connect to the database?
+  Expected:  ['DATABASE.md']
+  Retrieved: ['SETUP.md', 'SETUP.md', 'SETUP.md']
+  Hit:       False
+
+Query: Which endpoint lists all users?
+  Expected:  ['API_REFERENCE.md']
+  Retrieved: ['API_REFERENCE.md', 'API_REFERENCE.md', 'API_REFERENCE.md']
+  Hit:       True
+
+Query: What does the /api/projects/<project_id> route return?
+  Expected:  ['API_REFERENCE.md']
+  Retrieved: ['API_REFERENCE.md', 'API_REFERENCE.md', 'DATABASE.md']
+  Hit:       True
+
+Query: Is there any mention of payment processing in these docs?
+  Expected:  []
+  Retrieved: []
+  Hit:       False
+
+Query: How does a client refresh an access token?
+  Expected:  ['AUTH.md']
+  Retrieved: ['AUTH.md', 'API_REFERENCE.md', 'AUTH.md']
+  Hit:       True
+
+Query: Which fields are stored in the users table?
+  Expected:  ['API_REFERENCE.md', 'DATABASE.md']
+  Retrieved: []
+  Hit:       False
+

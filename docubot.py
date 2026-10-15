@@ -9,6 +9,7 @@ Core DocuBot class responsible for:
 
 import os
 import glob
+import re
 
 class DocuBot:
     def __init__(self, docs_folder="docs", llm_client=None):
@@ -48,56 +49,66 @@ class DocuBot:
     # Index Construction (Phase 1)
     # -----------------------------------------------------------
 
-    def build_index(self, documents):
-        """
-        TODO (Phase 1):
-        Build a tiny inverted index mapping lowercase words to the documents
-        they appear in.
-
-        Example structure:
-        {
-            "token": ["AUTH.md", "API_REFERENCE.md"],
-            "database": ["DATABASE.md"]
+    def tokenize(self, text):
+        """Extract lowercase keywords and remove common question words."""
+        stop_words = {
+            "a", "an", "the", "is", "are", "was", "were", "be",
+            "where", "what", "which", "how", "when", "why",
+            "do", "does", "did", "i", "you", "we", "it",
+            "to", "of", "in", "on", "for", "from", "with",
+            "and", "or", "by", "as", "at", "this", "that",
+            "these", "those", "there", "any", "all", "can",
+            "my", "our", "your", "me", "about", "mention",
+            "docs", "documentation"
         }
+        words = re.findall(r"[a-z0-9]+", text.lower())
+        return {word for word in words if word not in stop_words}
 
-        Keep this simple: split on whitespace, lowercase tokens,
-        ignore punctuation if needed.
-        """
+    def build_index(self, documents):
+        """Map each keyword to the filenames containing it."""
         index = {}
-        # TODO: implement simple indexing
+        for filename, text in documents:
+            for word in self.tokenize(text):
+                index.setdefault(word, set()).add(filename)
         return index
 
-    # -----------------------------------------------------------
-    # Scoring and Retrieval (Phase 1)
-    # -----------------------------------------------------------
-
     def score_document(self, query, text):
-        """
-        TODO (Phase 1):
-        Return a simple relevance score for how well the text matches the query.
+        """Return the fraction of query keywords found in the text."""
+        query_words = self.tokenize(query)
+        if not query_words:
+            return 0.0
 
-        Suggested baseline:
-        - Convert query into lowercase words
-        - Count how many appear in the text
-        - Return the count as the score
-        """
-        # TODO: implement scoring
-        return 0
+        text_words = self.tokenize(text)
+        matches = query_words & text_words
+        return len(matches) / len(query_words)
 
     def retrieve(self, query, top_k=3):
-        """
-        TODO (Phase 1):
-        Use the index and scoring function to select top_k relevant document snippets.
+        """Rank Markdown sections and reject weak keyword matches."""
+        if top_k <= 0:
+            return []
 
-        Return a list of (filename, text) sorted by score descending.
-        """
-        results = []
-        # TODO: implement retrieval logic
-        return results[:top_k]
+        candidate_files = set()
+        for word in self.tokenize(query):
+            candidate_files.update(self.index.get(word, set()))
 
-    # -----------------------------------------------------------
-    # Answering Modes
-    # -----------------------------------------------------------
+        scored = []
+        for filename, text in self.documents:
+            if filename not in candidate_files:
+                continue
+
+            # Keep each heading with its following paragraphs and examples.
+            sections = re.split(r"\n(?=#{1,3} )", text)
+            for section in sections:
+                section = section.strip()
+                if not section:
+                    continue
+
+                score = self.score_document(query, section)
+                if score >= 0.3:
+                    scored.append((filename, section, score))
+
+        scored = sorted(scored, key=lambda item: item[2], reverse=True)
+        return [(filename, section) for filename, section, _ in scored[:top_k]]
 
     def answer_retrieval_only(self, query, top_k=3):
         """
